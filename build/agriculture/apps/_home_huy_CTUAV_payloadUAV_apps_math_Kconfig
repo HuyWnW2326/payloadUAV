@@ -1,0 +1,6 @@
+menu "Math Library Support"
+source "/home/huy/CTUAV/payloadUAV/apps/math/gemmlowp/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/math/kissfft/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/math/libtommath/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/math/ruy/Kconfig"
+endmenu # Math Library Support

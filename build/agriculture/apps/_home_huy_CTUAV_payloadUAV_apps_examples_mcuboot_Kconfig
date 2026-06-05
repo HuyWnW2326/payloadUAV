@@ -1,0 +1,6 @@
+menu "MCUboot Examples"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/mcuboot/slot_confirm/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/mcuboot/swap_test/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/mcuboot/update_agent/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/mcuboot/update_agent_local/Kconfig"
+endmenu # MCUboot Examples

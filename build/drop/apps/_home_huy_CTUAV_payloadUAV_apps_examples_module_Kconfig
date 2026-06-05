@@ -1,0 +1,4 @@
+menu "Module"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/module/chardev/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/module/main/Kconfig"
+endmenu # Module

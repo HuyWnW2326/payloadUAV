@@ -1,0 +1,11 @@
+menu "drivers"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/crypto/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/drivertest/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/fftest/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/nand_sim/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/pcitest/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/rpmsgdev/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/sd_stress/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/ser/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/drivers/setest/Kconfig"
+endmenu # drivers

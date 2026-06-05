@@ -1,0 +1,5 @@
+menu "Sotest"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/sotest/main/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/sotest/modprint/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/examples/sotest/sotest/Kconfig"
+endmenu # Sotest

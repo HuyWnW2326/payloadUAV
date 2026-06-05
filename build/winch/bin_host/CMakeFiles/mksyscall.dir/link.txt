@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/mksyscall.dir/mksyscall.c.o CMakeFiles/mksyscall.dir/csvparser.c.o -o mksyscall 

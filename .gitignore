@@ -1,0 +1,9 @@
+# NuttX build output
+build/
+
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+*.map

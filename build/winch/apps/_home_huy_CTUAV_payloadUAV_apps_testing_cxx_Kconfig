@@ -1,0 +1,5 @@
+menu "cxx"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/cxx/cxxsize/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/cxx/cxxtest/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/cxx/uclibcxx_test/Kconfig"
+endmenu # cxx

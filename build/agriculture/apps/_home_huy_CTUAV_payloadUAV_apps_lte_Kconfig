@@ -1,0 +1,4 @@
+menu "LTE Libraries and NSH Add-Ons"
+source "/home/huy/CTUAV/payloadUAV/apps/lte/alt1250/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/lte/lapi/Kconfig"
+endmenu # LTE Libraries and NSH Add-Ons

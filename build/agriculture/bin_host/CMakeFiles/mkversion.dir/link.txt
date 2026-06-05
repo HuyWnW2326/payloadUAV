@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/mkversion.dir/mkversion.c.o CMakeFiles/mkversion.dir/cfgdefine.c.o -o mkversion 

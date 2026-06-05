@@ -1,0 +1,5 @@
+menu "Bootloader Utilities"
+source "/home/huy/CTUAV/payloadUAV/apps/boot/mcuboot/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/boot/miniboot/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/boot/nxboot/Kconfig"
+endmenu # Bootloader Utilities

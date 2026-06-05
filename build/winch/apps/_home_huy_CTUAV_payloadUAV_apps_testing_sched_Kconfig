@@ -1,0 +1,6 @@
+menu "sched"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/sched/getprime/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/sched/pthread_mutex_perf/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/sched/smp/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/sched/timerjitter/Kconfig"
+endmenu # sched

@@ -1,0 +1,7 @@
+menu "Machine Learning Support"
+source "/home/huy/CTUAV/payloadUAV/apps/mlearning/cmsis/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/mlearning/cmsis-nn/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/mlearning/darknet/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/mlearning/libnnablart/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/mlearning/tflite-micro/Kconfig"
+endmenu # Machine Learning Support

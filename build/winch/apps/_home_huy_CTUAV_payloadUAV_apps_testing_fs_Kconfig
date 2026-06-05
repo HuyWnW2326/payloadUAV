@@ -1,0 +1,11 @@
+menu "fs"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/epoll/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/fatutf8/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/fdsantest/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/fstest/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/memfd/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/mtd_config_fs/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/nxffs/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/smart/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/testing/fs/smart_test/Kconfig"
+endmenu # fs

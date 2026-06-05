@@ -1,0 +1,13 @@
+menu "File System Utilities"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/flash_eraseall/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/flashtool/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/inifile/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/inih/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/ipcfg/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/libtinycbor/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/mkfatfs/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/mkgpt/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/mkmbr/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/mksmartfs/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/fsutils/passwd/Kconfig"
+endmenu # File System Utilities

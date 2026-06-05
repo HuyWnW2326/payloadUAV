@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/configure.dir/configure.c.o CMakeFiles/configure.dir/cfgparser.c.o -o configure 

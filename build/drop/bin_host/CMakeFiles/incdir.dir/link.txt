@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/incdir.dir/incdir.c.o -o incdir 

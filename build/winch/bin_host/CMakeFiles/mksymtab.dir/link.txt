@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG CMakeFiles/mksymtab.dir/mksymtab.c.o CMakeFiles/mksymtab.dir/csvparser.c.o -o mksymtab 

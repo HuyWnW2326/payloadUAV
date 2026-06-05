@@ -1,0 +1,11 @@
+menu "CAN Utilities"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/candump/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/canlib/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/cansend/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/lely-canopen/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/libcanutils/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/libdronecan/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/libobd2/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/libopencyphal/Kconfig"
+source "/home/huy/CTUAV/payloadUAV/apps/canutils/slcan/Kconfig"
+endmenu # CAN Utilities

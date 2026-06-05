@@ -1,7 +1,0 @@
-menu "Wireless Libraries and NSH Add-Ons"
-source "/home/huy/CTUAV/payloadUAV/build/winch/apps/_home_huy_CTUAV_payloadUAV_apps_wireless_bluetooth_Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/gs2200m/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/build/winch/apps/_home_huy_CTUAV_payloadUAV_apps_wireless_ieee802154_Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/iwpan/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/wapi/Kconfig"
-endmenu # Wireless Libraries and NSH Add-Ons

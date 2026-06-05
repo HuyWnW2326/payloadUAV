@@ -1,6 +1,0 @@
-menu "LUA Modules"
-source "/home/huy/CTUAV/payloadUAV/apps/interpreters/luamodules/cjson/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/interpreters/luamodules/lfs/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/interpreters/luamodules/luasyslog/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/interpreters/luamodules/luv/Kconfig"
-endmenu # LUA Modules

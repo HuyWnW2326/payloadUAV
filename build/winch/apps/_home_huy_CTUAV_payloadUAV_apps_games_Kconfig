@@ -1,6 +1,0 @@
-menu "Games"
-source "/home/huy/CTUAV/payloadUAV/apps/games/brickmatch/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/games/cgol/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/games/match4/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/games/snake/Kconfig"
-endmenu # Games

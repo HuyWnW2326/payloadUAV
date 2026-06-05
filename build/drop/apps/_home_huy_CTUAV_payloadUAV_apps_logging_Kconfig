@@ -1,4 +1,0 @@
-menu "Logging Utilities"
-source "/home/huy/CTUAV/payloadUAV/apps/logging/embedlog/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/logging/nxscope/Kconfig"
-endmenu # Logging Utilities

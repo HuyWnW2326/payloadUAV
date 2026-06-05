@@ -1,3 +1,0 @@
-menu "Modbus"
-source "/home/huy/CTUAV/payloadUAV/apps/industry/modbus/freemodbus/Kconfig"
-endmenu # Modbus

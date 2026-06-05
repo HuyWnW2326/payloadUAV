@@ -1,3 +1,0 @@
-menu "TEE Libraries Support"
-source "/home/huy/CTUAV/payloadUAV/apps/tee/optee_client/Kconfig"
-endmenu # TEE Libraries Support

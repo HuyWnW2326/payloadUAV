@@ -1,5 +1,0 @@
-menu "arch"
-source "/home/huy/CTUAV/payloadUAV/apps/testing/arch/himem_test/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/testing/arch/mtetest/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/testing/arch/x86-64-ABI/Kconfig"
-endmenu # arch

@@ -1,4 +1,0 @@
-menu "Bluetooth applications"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/bluetooth/btsak/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/bluetooth/nimble/Kconfig"
-endmenu # Bluetooth applications

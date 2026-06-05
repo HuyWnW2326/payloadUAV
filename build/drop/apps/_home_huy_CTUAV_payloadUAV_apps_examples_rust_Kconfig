@@ -1,5 +1,0 @@
-menu "Rust Examples"
-source "/home/huy/CTUAV/payloadUAV/apps/examples/rust/baremetal/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/examples/rust/hello/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/examples/rust/slint/Kconfig"
-endmenu # Rust Examples

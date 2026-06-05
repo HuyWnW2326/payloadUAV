@@ -1,8 +1,0 @@
-menu "Audio Utility libraries"
-source "/home/huy/CTUAV/payloadUAV/apps/audioutils/fmsynth/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/audioutils/lame/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/audioutils/libmad/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/audioutils/mml_parser/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/audioutils/nxaudio/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/audioutils/rtttl-c/Kconfig"
-endmenu # Audio Utility libraries

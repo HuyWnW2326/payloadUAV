@@ -1,6 +1,0 @@
-menu "IEEE 802.15.4 applications"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/ieee802154/i8sak/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/ieee802154/i8shark/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/ieee802154/libmac/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/wireless/ieee802154/libutils/Kconfig"
-endmenu # IEEE 802.15.4 applications

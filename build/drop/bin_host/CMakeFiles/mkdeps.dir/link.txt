@@ -1,1 +1,0 @@
-/usr/bin/cc -O3 -DNDEBUG CMakeFiles/mkdeps.dir/mkdeps.c.o CMakeFiles/mkdeps.dir/cfgdefine.c.o -o mkdeps 

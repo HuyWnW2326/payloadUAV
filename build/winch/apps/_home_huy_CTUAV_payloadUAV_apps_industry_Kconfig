@@ -1,7 +1,0 @@
-menu "Industrial Applications"
-source "/home/huy/CTUAV/payloadUAV/apps/industry/abnt_codi/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/industry/foc/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/build/winch/apps/_home_huy_CTUAV_payloadUAV_apps_industry_modbus_Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/industry/nxmodbus/Kconfig"
-source "/home/huy/CTUAV/payloadUAV/apps/industry/scpi/Kconfig"
-endmenu # Industrial Applications

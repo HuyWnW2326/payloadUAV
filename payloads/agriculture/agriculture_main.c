@@ -26,6 +26,7 @@
 #define MAVLINK_TASK_PRIO       100
 #define MAVLINK_UART_DEVICE     "/dev/ttyS1"
 #define MAVLINK_UART_BAUDRATE   57600
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -37,6 +38,7 @@ typedef struct
   float spray_width;
   bool is_spraying;
   bool is_mission_mode;
+  bool test_mode;
 } agriculture_receiver_t;
 
 /****************************************************************************
@@ -52,6 +54,39 @@ static bool                     g_mavlink_initialized   = false;
  * Private Functions
  ****************************************************************************/
 
+static void set_all_pwm_min(struct pwm_driver_s *pwm)
+{
+  const uint32_t pulse[] = {
+    PARAM_GET_U32(PARAM_SERVO1_MIN), PARAM_GET_U32(PARAM_SERVO2_MIN),
+    PARAM_GET_U32(PARAM_SERVO3_MIN), PARAM_GET_U32(PARAM_SERVO4_MIN),
+    PARAM_GET_U32(PARAM_SERVO5_MIN), PARAM_GET_U32(PARAM_SERVO6_MIN)
+  };
+
+  pwm_driver_set_all_pulses(pwm, pulse, 6);
+}
+
+static void set_all_pwm_max(struct pwm_driver_s *pwm)
+{
+  const uint32_t pulse[] = {
+    PARAM_GET_U32(PARAM_SERVO1_MAX), PARAM_GET_U32(PARAM_SERVO2_MAX),
+    PARAM_GET_U32(PARAM_SERVO3_MAX), PARAM_GET_U32(PARAM_SERVO4_MAX),
+    PARAM_GET_U32(PARAM_SERVO5_MAX), PARAM_GET_U32(PARAM_SERVO6_MAX)
+  };
+
+  pwm_driver_set_all_pulses(pwm, pulse, 6);
+}
+
+static void set_spray_pwm(struct pwm_driver_s *pwm, uint32_t pump_pulse)
+{
+  const uint32_t pulse[] = {
+    PARAM_GET_U32(PARAM_SERVO1_MAX), PARAM_GET_U32(PARAM_SERVO2_MAX),
+    PARAM_GET_U32(PARAM_SERVO3_MAX), PARAM_GET_U32(PARAM_SERVO4_MAX),
+    pump_pulse, PARAM_GET_U32(PARAM_SERVO6_MIN)
+  };
+
+  pwm_driver_set_all_pulses(pwm, pulse, 6);
+}
+
 static uint8_t handle_do_set_actuator(struct mavlink_receiver_s *recv,
                                       const mavlink_command_long_t *cmd)
 {
@@ -63,31 +98,25 @@ static uint8_t handle_do_set_actuator(struct mavlink_receiver_s *recv,
       return MAV_RESULT_FAILED;
     }
 
-  uint8_t result = MAV_RESULT_ACCEPTED;
-
-  /* For runtime */
-  agri->is_spraying = (cmd->param1 > 0);
-
-  /*  For Testing*/
   if (cmd->param2 > 0)
     {
-      const uint32_t pulse[] = {
-        PARAM_GET_U32(PARAM_SERVO1_MAX), PARAM_GET_U32(PARAM_SERVO2_MAX),
-        PARAM_GET_U32(PARAM_SERVO3_MAX), PARAM_GET_U32(PARAM_SERVO4_MAX),
-        PARAM_GET_U32(PARAM_SERVO5_MAX), PARAM_GET_U32(PARAM_SERVO6_MAX)
-      };
-      pwm_driver_set_all_pulses(agri->mavlink.pwm, pulse, 6);
-      agri->is_spraying = false;
+      agri->test_mode = true;
+      set_all_pwm_max(agri->mavlink.pwm);
     }
   else if (cmd->param2 < 0)
     {
-      const uint32_t pulse[] = {
-        PARAM_GET_U32(PARAM_SERVO1_MIN), PARAM_GET_U32(PARAM_SERVO2_MIN),
-        PARAM_GET_U32(PARAM_SERVO3_MIN), PARAM_GET_U32(PARAM_SERVO4_MIN),
-        PARAM_GET_U32(PARAM_SERVO5_MIN), PARAM_GET_U32(PARAM_SERVO6_MIN)
-      };
-      pwm_driver_set_all_pulses(agri->mavlink.pwm, pulse, 6);
-      agri->is_spraying = false;
+      agri->test_mode = true;
+      set_all_pwm_min(agri->mavlink.pwm);
+    }
+  else
+    {
+      agri->test_mode = false;
+      agri->is_spraying = (cmd->param1 > 0);
+
+      if (!agri->is_spraying)
+        {
+          set_all_pwm_min(agri->mavlink.pwm);
+        }
     }
 
   return MAV_RESULT_ACCEPTED;
@@ -96,59 +125,60 @@ static uint8_t handle_do_set_actuator(struct mavlink_receiver_s *recv,
 static void handle_local_position(struct mavlink_receiver_s *recv, 
                                   int reply_fd, mavlink_message_t *msg)
 {
-    agriculture_receiver_t *agri = (agriculture_receiver_t *)recv;
+  agriculture_receiver_t *agri = (agriculture_receiver_t *)recv;
 
-    if(!agri->is_mission_mode)
+  mavlink_local_position_ned_t pos;
+  mavlink_msg_local_position_ned_decode(msg, &pos);
+
+  float speed = sqrtf(pos.vx * pos.vx + pos.vy * pos.vy);
+
+  if (agri->test_mode)
     {
-        const uint32_t pulse[] = {PARAM_GET_U32(PARAM_SERVO1_MIN), PARAM_GET_U32(PARAM_SERVO2_MIN), PARAM_GET_U32(PARAM_SERVO3_MIN), PARAM_GET_U32(PARAM_SERVO4_MIN), PARAM_GET_U32(PARAM_SERVO5_MIN), PARAM_GET_U32(PARAM_SERVO6_MIN)};
-        pwm_driver_set_all_pulses(recv->pwm, pulse, 6);
-        return;
+      return;
     }
-        
-    mavlink_local_position_ned_t pos;
-    mavlink_msg_local_position_ned_decode(msg, &pos);
 
-    float speed = sqrtf(pos.vx * pos.vx + pos.vy * pos.vy);
-
-    if(speed < 0.5 && agri->is_spraying)
+  if (agri->is_mission_mode && agri->is_spraying && speed > 0.5f)
     {
-        const uint32_t pulse[] = {PARAM_GET_U32(PARAM_SERVO1_MIN), PARAM_GET_U32(PARAM_SERVO2_MIN), PARAM_GET_U32(PARAM_SERVO3_MIN), PARAM_GET_U32(PARAM_SERVO4_MIN), PARAM_GET_U32(PARAM_SERVO5_MIN), PARAM_GET_U32(PARAM_SERVO6_MIN)};
-        pwm_driver_set_all_pulses(recv->pwm, pulse, 6);
-    }
-    else if(agri->is_spraying)
-    {
-        float flow_rate = (agri->density * speed * agri->spray_width) * (60.0f / 10000.0f);           // l/min
-        float pulse = 1100 + 25.8 * (flow_rate - 1);
+      float flow_rate = (agri->density * speed * agri->spray_width) *
+                        (60.0f / 10000.0f);
+      float pump_pulse = 1100.0f + 25.8f * (flow_rate - 1.0f);
 
-        if(pulse > 1100)
+      if (pump_pulse > 1100.0f)
         {
-            pwm_driver_set_pulse(recv->pwm, 1, PARAM_GET_U32(PARAM_SERVO1_MAX));
-            pwm_driver_set_pulse(recv->pwm, 2, PARAM_GET_U32(PARAM_SERVO2_MAX));
-            pwm_driver_set_pulse(recv->pwm, 3, PARAM_GET_U32(PARAM_SERVO3_MAX));
-            pwm_driver_set_pulse(recv->pwm, 4, PARAM_GET_U32(PARAM_SERVO4_MAX));
-            pwm_driver_set_pulse(recv->pwm, 5, pulse);
+          set_spray_pwm(recv->pwm, (uint32_t)pump_pulse);
         }
+      else
+        {
+          set_all_pwm_min(recv->pwm);
+        }
+    }
+  else
+    {
+      set_all_pwm_min(recv->pwm);
     }
 }
 
 static void handle_heartbeat(struct mavlink_receiver_s *recv, 
                              int reply_fd, mavlink_message_t *msg)
 {
-    mavlink_heartbeat_t heartbeat;
-    mavlink_msg_heartbeat_decode(msg, &heartbeat);
+  mavlink_heartbeat_t heartbeat;
+  mavlink_msg_heartbeat_decode(msg, &heartbeat);
 
-    agriculture_receiver_t *agri = (agriculture_receiver_t *)recv;
+  agriculture_receiver_t *agri = (agriculture_receiver_t *)recv;
 
-    uint8_t base_mode = heartbeat.base_mode;
-    uint32_t custom_mode = heartbeat.custom_mode;
+  uint32_t custom_mode = heartbeat.custom_mode;
 
-    uint8_t main_mode = (custom_mode >> 16) & 0xFF;
-    uint8_t sub_mode  = (custom_mode >> 24) & 0xFF;
+  uint8_t main_mode = (custom_mode >> 16) & 0xFF;
+  uint8_t sub_mode  = (custom_mode >> 24) & 0xFF;
 
-    if (main_mode == 4 && sub_mode == 4)
-        agri->is_mission_mode = true;
-    else
-        agri->is_mission_mode = false;
+  if (main_mode == 4 && sub_mode == 4)
+    {
+      agri->is_mission_mode = true;
+    }
+  else
+    {
+      agri->is_mission_mode = false;
+    }
 }
 
 static mavlink_ops_t agriculture_ops = {
@@ -164,7 +194,7 @@ static mavlink_ops_t agriculture_ops = {
 
 static int mavlink_task_entry(int argc, char *argv[])
 {
-  return run(&g_mavlink);
+  return mavlink_receiver_run(&g_mavlink.mavlink);
 }
 
 /****************************************************************************

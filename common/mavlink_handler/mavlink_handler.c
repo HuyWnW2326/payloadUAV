@@ -32,6 +32,9 @@
 #define FD_IDX_USB      1
 #define MAX_FDS         2
 
+#define QGC_USB_SYS_ID   1
+#define QGC_USB_COMP_ID  MAV_COMP_ID_AUTOPILOT1
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -109,6 +112,10 @@ static int usb_try_open(void)
     {
       printf("[MAVLink] USB connected -> /dev/ttyACM0\n");
     }
+  else 
+    {
+      printf("[MAVLink] USB not connected\n");
+    }
   return fd;
 }
 
@@ -154,6 +161,16 @@ static void mavlink_broadcast(struct mavlink_receiver_s *recv,
     }
 }
 
+static uint8_t link_sys_id(struct mavlink_receiver_s *recv, int reply_fd)
+{
+  return reply_fd == recv->usb_fd ? QGC_USB_SYS_ID : recv->sys_id;
+}
+
+static uint8_t link_comp_id(struct mavlink_receiver_s *recv, int reply_fd)
+{
+  return reply_fd == recv->usb_fd ? QGC_USB_COMP_ID : recv->comp_id;
+}
+
 static void send_heartbeat(struct mavlink_receiver_s *recv)
 {
   mavlink_message_t msg_uart;
@@ -164,10 +181,11 @@ static void send_heartbeat(struct mavlink_receiver_s *recv)
   uint8_t           buf_usb[MAVLINK_MAX_PACKET_LEN];
   uint16_t          len_usb;
 
-  mavlink_msg_heartbeat_pack(1, 204, &msg_uart, MAV_TYPE_ONBOARD_CONTROLLER,
+  mavlink_msg_heartbeat_pack(recv->sys_id, recv->comp_id, &msg_uart,
+                             MAV_TYPE_ONBOARD_CONTROLLER,
                              MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
 
-  mavlink_msg_heartbeat_pack(recv->sys_id, recv->comp_id, &msg_usb,
+  mavlink_msg_heartbeat_pack(QGC_USB_SYS_ID, QGC_USB_COMP_ID, &msg_usb,
                              MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_GENERIC, 0, 0,
                              MAV_STATE_ACTIVE);
 
@@ -183,8 +201,9 @@ static void send_ack(struct mavlink_receiver_s *recv, int reply_fd,
   uint8_t           buf[MAVLINK_MAX_PACKET_LEN];
   uint16_t          len;
 
-  mavlink_msg_command_ack_pack(recv->sys_id, recv->comp_id, &msg, cmd, result,
-                               0, 0, 0, 0);
+  mavlink_msg_command_ack_pack(link_sys_id(recv, reply_fd),
+                               link_comp_id(recv, reply_fd), &msg, cmd,
+                               result, 0, 0, 0, 0);
 
   len = mavlink_msg_to_send_buffer(buf, &msg);
   mavlink_send(reply_fd, buf, len);
@@ -202,7 +221,8 @@ static void send_param(struct mavlink_receiver_s *recv, int reply_fd,
   uint8_t           buf[MAVLINK_MAX_PACKET_LEN];
   uint16_t          len;
 
-  mavlink_msg_param_value_pack(recv->sys_id, recv->comp_id, &msg,
+  mavlink_msg_param_value_pack(link_sys_id(recv, reply_fd),
+                               link_comp_id(recv, reply_fd), &msg,
                                g_params[idx].name, g_params[idx].value,
                                MAV_PARAM_TYPE_REAL32, (uint16_t)NUM_PARAMS,
                                idx);
@@ -212,6 +232,25 @@ static void send_param(struct mavlink_receiver_s *recv, int reply_fd,
 
   printf("[PARAM] Send [%u/%u] %s = %.1f\n", idx + 1, (unsigned)NUM_PARAMS,
          g_params[idx].name, (double)g_params[idx].value);
+}
+
+static bool target_matches(struct mavlink_receiver_s *recv, int reply_fd,
+                           uint8_t target_system, uint8_t target_component)
+{
+  uint8_t sys_id  = link_sys_id(recv, reply_fd);
+  uint8_t comp_id = link_comp_id(recv, reply_fd);
+
+  if (target_system != 0 && target_system != sys_id)
+    {
+      return false;
+    }
+
+  if (target_component != 0 && target_component != comp_id)
+    {
+      return false;
+    }
+
+  return true;
 }
 
 /****************************************************************************
@@ -225,7 +264,8 @@ static void handle_param_request_list(struct mavlink_receiver_s *recv,
 
   mavlink_msg_param_request_list_decode(msg, &req);
 
-  if (req.target_system != recv->sys_id && req.target_system != 0)
+  if (!target_matches(recv, reply_fd, req.target_system,
+                      req.target_component))
     {
       return;
     }
@@ -246,7 +286,8 @@ static void handle_param_request_read(struct mavlink_receiver_s *recv,
 
   mavlink_msg_param_request_read_decode(msg, &req);
 
-  if (req.target_system != recv->sys_id && req.target_system != 0)
+  if (!target_matches(recv, reply_fd, req.target_system,
+                      req.target_component))
     {
       return;
     }
@@ -280,6 +321,12 @@ static void handle_param_set(struct mavlink_receiver_s *recv, int reply_fd,
   mavlink_param_set_t set;
 
   mavlink_msg_param_set_decode(msg, &set);
+
+  if (!target_matches(recv, reply_fd, set.target_system,
+                      set.target_component))
+    {
+      return;
+    }
 
   for (uint16_t i = 0; i < (uint16_t)NUM_PARAMS; i++)
     {
@@ -370,7 +417,8 @@ static void handle_mission_request_list(struct mavlink_receiver_s *recv,
 
   mavlink_msg_mission_request_list_decode(msg, &req);
 
-  if (req.target_system != recv->sys_id && req.target_system != 0)
+  if (!target_matches(recv, reply_fd, req.target_system,
+                      req.target_component))
     {
       return;
     }
@@ -381,7 +429,8 @@ static void handle_mission_request_list(struct mavlink_receiver_s *recv,
   uint8_t           buf[MAVLINK_MAX_PACKET_LEN];
   uint16_t          len;
 
-  mavlink_msg_mission_count_pack(recv->sys_id, recv->comp_id, &rsp,
+  mavlink_msg_mission_count_pack(link_sys_id(recv, reply_fd),
+                                 link_comp_id(recv, reply_fd), &rsp,
                                  req.target_system, req.target_component, 0,
                                  MAV_MISSION_TYPE_MISSION, 0);
 
@@ -493,7 +542,7 @@ static void process_fd(int fd, uint8_t channel, mavlink_message_t *msg,
  * Main loop
  ****************************************************************************/
 
-int run(struct mavlink_receiver_s *recv)
+int mavlink_receiver_run(struct mavlink_receiver_s *recv)
 {
   mavlink_message_t msg_uart;
   mavlink_message_t msg_usb;

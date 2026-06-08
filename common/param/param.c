@@ -71,14 +71,14 @@ struct param_entry_s    g_params[] = {
   { "SERVO5_MIN", 1000.0f          }, { "SERVO5_MAX",  2000.0f            },
   { "SERVO6_MIN", 1000.0f          }, { "SERVO6_MAX",  2000.0f            },
   { "SERVO_NUM",  6.0f             }, { "PWM_FREQ",    50.0f              },
-  { "MAV_SYS_ID", 1.0f             }, { "MAV_COMP_ID", 236.0f             },
+  { "MAV_SYS_ID", 1.0f             }, { "MAV_COMP_ID", 236.0f           },
 };
 
-const int               NUM_PARAMS =
-  (int)(sizeof(g_params) / sizeof(g_params[0]));
+const int NUM_PARAMS = (int)(sizeof(g_params) / sizeof(g_params[0]));
+
 
 /* Flash read pointer (memory-mapped, read-only) */
-static const struct param_flash_block_s *const FLASH_PARAM =
+static const struct param_flash_block_s *const FLASH_PARAM = 
   (const struct param_flash_block_s *)PARAM_FLASH_BASE_ADDR;
 
 /* Default backup for reset */
@@ -228,21 +228,19 @@ static void save_defaults(void)
 
 int param_manager_init(void)
 {
-  save_defaults();
-  printf("[PARAM] Init @ 0x%08lX (sector 7)\n",
-         (unsigned long)PARAM_FLASH_BASE_ADDR);
+    save_defaults();
+    printf("[PARAM] Init @ 0x%08lX (sector 7)\n",
+           (unsigned long)PARAM_FLASH_BASE_ADDR);
 
-  /* int ret = param_manager_load();
-   * if (ret != 0)
-   * {
-   * printf("[PARAM] Using factory defaults\n");
-   */
-  param_manager_reset_defaults();
+    int ret = param_manager_load();
+    if (ret != 0)
+    {
+        printf("[PARAM] Using factory defaults\n");
+        param_manager_reset_defaults();
+    }
 
-  /* } */
-
-  param_manager_print_all();
-  return 0;
+    param_manager_print_all();
+    return 0;
 }
 
 int param_manager_load(void)

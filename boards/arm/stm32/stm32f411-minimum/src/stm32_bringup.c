@@ -44,6 +44,10 @@
 #  include "stm32_usbhost.h"
 #endif
 
+#ifdef CONFIG_CDCACM
+#  include <nuttx/usb/cdcacm.h>
+#endif
+
 #include "stm32f411-minimum.h"
 
 /****************************************************************************
@@ -180,6 +184,14 @@ int stm32_bringup(void)
     {
       ferr("ERROR: Failed to mount procfs at %s: %d\n",
            STM32_PROCFS_MOUNTPOINT, ret);
+    }
+#endif
+
+#if defined(CONFIG_CDCACM) && !defined(CONFIG_CDCACM_CONSOLE)
+  ret = cdcacm_initialize(0, NULL);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: cdcacm_initialize() failed: %d\n", ret);
     }
 #endif
 

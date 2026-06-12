@@ -1,7 +1,7 @@
 /****************************************************************************
- * payloads/drop/drop_main.c
+ * payloads/winch/winch_main.c
  *
- * Drop payload entry point.
+ * Winch payload entry point.
  *
  ****************************************************************************/
 /****************************************************************************
@@ -34,14 +34,14 @@
 typedef struct
 {
   struct mavlink_receiver_s mavlink;
-} drop_receiver_t;
+} winch_receiver_t;
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 
 static struct pwm_driver_s   g_pwm;
-static drop_receiver_t       g_mavlink;
+static winch_receiver_t      g_mavlink;
 static bool                  g_pwm_initialized       = false;
 static bool                  g_mavlink_initialized   = false;
 
@@ -53,49 +53,34 @@ static uint8_t handle_do_set_actuator(struct mavlink_receiver_s *recv,
                                       const mavlink_command_long_t *cmd)
 {
 
-  drop_receiver_t *drop = (drop_receiver_t *)recv;
+  winch_receiver_t *winch = (winch_receiver_t *)recv;
 
-  if (drop->mavlink.pwm == NULL)
+  uint8_t duty = 0;
+
+  if (winch->mavlink.pwm == NULL)
     {
       return MAV_RESULT_FAILED;
     }
 
-  float params[6] =
-    {
-      cmd->param1, cmd->param2, cmd->param3,
-      cmd->param4, cmd->param5, cmd->param6
-    };
-
   uint8_t result = MAV_RESULT_ACCEPTED;
 
-  for (int i = 0; i < 6; i++)
+  if(cmd->param1 > 0)
+    duty = 100;
+  else 
+    duty  = 0;
+
+  int r = pwm_driver_set_duty(winch->mavlink.pwm, 1, duty);
+  printf("[MAVLink] Actuator -> %d%%\n", duty);
+
+  if (r < 0)
     {
-      if (isnan(params[i]))
-        {
-          continue;
-        }
-
-      float    norm      = fmaxf(-1.0f, fminf(1.0f, params[i]));
-      uint32_t min_pulse = PARAM_GET_U32(PARAM_SERVO1_MIN + i * 2);
-      uint32_t max_pulse = PARAM_GET_U32(PARAM_SERVO1_MIN + i * 2 + 1);
-      uint32_t pulse     = (uint32_t)(min_pulse +
-                           (norm + 1.0f) * 0.5f *
-                           (max_pulse - min_pulse));
-
-      int r = pwm_driver_set_pulse(drop->mavlink.pwm, (uint8_t)i, pulse);
-      printf("[MAVLink] Actuator %d -> %lu us [%s]\n",
-             i + 1, (unsigned long)pulse, r >= 0 ? "OK" : "FAIL");
-
-      if (r < 0)
-        {
-          result = MAV_RESULT_FAILED;
-        }
+       result = MAV_RESULT_FAILED;
     }
 
   return result;
 }
 
-static mavlink_ops_t drop_ops = {
+static mavlink_ops_t winch_ops = {
   .handle_do_set_servo      = NULL,
   .handle_do_set_actuator   = handle_do_set_actuator,
   .handle_heartbeat         = NULL,
@@ -128,53 +113,12 @@ static int init_pwm(void)
 
   /* TIM2 */
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 1, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO1_MIN), 0);
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 2, PWM_MODE_DUTY, 0, 50);
   if (ret < 0)
     {
       goto err;
     }
   printf("✓ Servo 1 (TIM2-CH1)");
-
-  ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 2, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO2_MIN), 0);
-  if (ret < 0)
-    {
-      goto err;
-    }
-  printf("✓ Servo 2 (TIM2-CH2)");
-
-  /* TIM3 */
-  ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 1, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO3_MIN), 0);
-  if (ret < 0)
-    {
-      goto err;
-    }
-  printf("✓ Servo 3 (TIM3-CH1)");
-
-  ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 2, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO4_MIN), 0);
-  if (ret < 0)
-    {
-      goto err;
-    }
-  printf("✓ Servo 4 (TIM3-CH2)\n");
-
-  ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 3, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO5_MIN), 0);
-  if (ret < 0)
-    {
-      goto err;
-    }
-  printf("✓ Servo 5 (TIM3-CH3) \n");
-
-  ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 4, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO6_MIN), 0);
-  if (ret < 0)
-    {
-      goto err;
-    }
-  printf("✓ Servo 6 (TIM3-CH4)\n");
 
   return 0;
 
@@ -188,7 +132,7 @@ err:
 static int init_mavlink(void)
 {
   int ret = mavlink_receiver_init(&g_mavlink.mavlink, MAVLINK_UART_DEVICE, 
-                                  MAVLINK_UART_BAUDRATE, &g_pwm, &drop_ops);
+                                  MAVLINK_UART_BAUDRATE, &g_pwm, &winch_ops);
 
   if (ret < 0)
     {
@@ -205,7 +149,7 @@ static int init_mavlink(void)
  * Public Functions
  ****************************************************************************/
 
-int drop_payload_main(int argc, char *argv[])
+int winch_payload_main(int argc, char *argv[])
 {
   int ret;
 

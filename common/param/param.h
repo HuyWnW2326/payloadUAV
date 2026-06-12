@@ -6,8 +6,8 @@
  *
  ****************************************************************************/
 
-#ifndef __PAYLOAD_CONTROLLER_PARAM_MANAGER_H
-#define __PAYLOAD_CONTROLLER_PARAM_MANAGER_H
+#ifndef __COMMON_PARAM_H
+#define __COMMON_PARAM_H
 
 /****************************************************************************
  * Included Files
@@ -38,6 +38,7 @@
  ****************************************************************************/
 
 /* One parameter: 16 bytes for name + 4 bytes for float = 20 bytes */
+
 struct param_entry_s
 {
   char name[PARAM_NAME_LEN];
@@ -53,6 +54,7 @@ struct param_flash_block_s
 };
 
 /* ---- Enum index ---- */
+
 typedef enum
 {
   PARAM_SERVO1_MIN = 0, PARAM_SERVO1_MAX, PARAM_SERVO2_MIN, PARAM_SERVO2_MAX,
@@ -62,6 +64,7 @@ typedef enum
 } param_id_e;
 
 /* ---- Fast reads ---- */
+
 #define PARAM_GET_FLOAT(id)     (g_params[(id)].value)
 #define PARAM_GET_U32(id)       ((uint32_t)g_params[(id)].value)
 
@@ -77,7 +80,8 @@ extern const int            NUM_PARAMS;
  ****************************************************************************/
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 int param_manager_init(void);                           /* Call at boot: load
@@ -101,4 +105,4 @@ void param_manager_print_all(void);                     /* Print all params */
 }
 #endif
 
-#endif /* __PAYLOAD_CONTROLLER_PARAM_MANAGER_H */
+#endif /* __COMMON_PARAM_H */

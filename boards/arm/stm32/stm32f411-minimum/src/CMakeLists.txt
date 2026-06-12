@@ -70,6 +70,10 @@ if(CONFIG_ADC_HX711)
   list(APPEND SRCS stm32_hx711.c)
 endif()
 
+if(CONFIG_LPWAN_SX126X)
+  list(APPEND SRCS stm32_sx126x.c)
+endif()
+
 target_sources(board PRIVATE ${SRCS})
 
 set_property(GLOBAL PROPERTY LD_SCRIPT

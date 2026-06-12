@@ -5,8 +5,8 @@
  *
  ****************************************************************************/
 
-#ifndef MAVLINK_HANDLER_H
-#define MAVLINK_HANDLER_H
+#ifndef __COMMON_MAVLINK_HANDLER_H
+#define __COMMON_MAVLINK_HANDLER_H
 
 /****************************************************************************
  * Included Files
@@ -31,12 +31,11 @@ typedef struct
   uint8_t (*handle_do_set_actuator)(struct mavlink_receiver_s *recv,
                                     const mavlink_command_long_t *cmd);
 
-  void (*handle_local_position)(struct mavlink_receiver_s *recv, 
+  void (*handle_local_position)(struct mavlink_receiver_s *recv,
                                 int reply_fd, mavlink_message_t *msg);
 
-  void (*handle_heartbeat)(struct mavlink_receiver_s *recv, 
+  void (*handle_heartbeat)(struct mavlink_receiver_s *recv,
                            int reply_fd, mavlink_message_t *msg);
-
 } mavlink_ops_t;
 
 struct mavlink_receiver_s
@@ -64,4 +63,4 @@ void mavlink_receiver_stop(struct mavlink_receiver_s *recv);
 
 void mavlink_receiver_deinit(struct mavlink_receiver_s *recv);
 
-#endif /* MAVLINK_HANDLER_H */
+#endif /* __COMMON_MAVLINK_HANDLER_H */

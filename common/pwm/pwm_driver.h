@@ -5,8 +5,8 @@
  *
  ****************************************************************************/
 
-#ifndef __INDUSTRY_PAYLOAD_CONTROLLER_PWM_DRIVER_H
-#define __INDUSTRY_PAYLOAD_CONTROLLER_PWM_DRIVER_H
+#ifndef __COMMON_PWM_DRIVER_H
+#define __COMMON_PWM_DRIVER_H
 
 /****************************************************************************
  * Included Files
@@ -20,14 +20,24 @@
  * Public Types
  ****************************************************************************/
 
+/* PWM output mode */
+
+typedef enum
+{
+  PWM_MODE_SERVO = 0,   /* pulse width 1000-2000us (agri, drop) */
+  PWM_MODE_DUTY,        /* raw duty cycle 0-100% (winch)        */
+} pwm_mode_t;
+
 /* PWM channel state */
 
 struct pwm_channel_s
 {
-  int fd;               /* File descriptor for the PWM device */
-  uint8_t channel_num;  /* PWM channel number of timer */
-  uint32_t pulse_us;    /* Pulse width in microseconds */
-  bool is_open;         /* Channel is initialized */
+  int fd;                 /* File descriptor for the PWM device */
+  uint8_t channel_num;    /* PWM channel number of timer */
+  uint32_t pulse_us;      /* Pulse width in microseconds */
+  uint8_t  duty_percent;  /* Duty mode:  0-100%          */
+  pwm_mode_t mode;
+  bool is_open;           /* Channel is initialized */
 };
 
 /* PWM driver context */
@@ -65,7 +75,8 @@ int pwm_driver_init(struct pwm_driver_s *driver, uint32_t frequency_hz);
  */
 
 int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
-                           uint8_t channel_num, uint32_t initial_pulse_us);
+                           uint8_t channel_num, pwm_mode_t mode, 
+                           uint32_t initial_pulse_us, uint32_t initial_duty);
 
 /**
  * Set pulse width for one channel
@@ -78,6 +89,9 @@ int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
 
 int pwm_driver_set_pulse(struct pwm_driver_s *driver, uint8_t channel_idx,
                          uint32_t pulse_us);
+
+int pwm_driver_set_duty(struct pwm_driver_s *driver,
+                        uint8_t channel_idx, uint8_t duty_percent);
 
 /**
  * Set pulse widths for all channels
@@ -109,4 +123,4 @@ void pwm_driver_stop_all(struct pwm_driver_s *driver);
 
 void pwm_driver_deinit(struct pwm_driver_s *driver);
 
-#endif /* __INDUSTRY_PAYLOAD_CONTROLLER_PWM_DRIVER_H */
+#endif /* __COMMON_PWM_DRIVER_H */

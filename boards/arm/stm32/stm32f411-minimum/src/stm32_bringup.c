@@ -195,5 +195,13 @@ int stm32_bringup(void)
     }
 #endif
 
+#ifdef CONFIG_LPWAN_SX126X
+  ret = stm32_sx126x_initialize();
+  if (ret != OK)
+    {
+      wlerr("ERROR: Failed to initialize sx126x: %d\n", ret);
+    }
+#endif
+
   return ret;
 }

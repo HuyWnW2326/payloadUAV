@@ -81,6 +81,12 @@
   (GPIO_PORTA | GPIO_PIN4 | GPIO_OUTPUT_SET | GPIO_OUTPUT | GPIO_FLOAT | \
    GPIO_SPEED_50MHz)
 
+#ifdef CONFIG_LPWAN_SX126X
+#  define GPIO_SX126X_CS \
+    (GPIO_PORTB | GPIO_PIN12 | GPIO_OUTPUT_SET | GPIO_OUTPUT | \
+     GPIO_PUSHPULL | GPIO_SPEED_50MHz)
+#endif
+
 /* procfs File System */
 
 #ifdef CONFIG_FS_PROCFS
@@ -240,6 +246,26 @@ int stm32_pwm_setup(void);
 
 #ifdef CONFIG_RGBLED
 int stm32_rgbled_setup(void);
+#endif
+
+/****************************************************************************
+ * Name: stm32_sx126x_initialize
+ *
+ * Description:
+ *   This function is called by board initialization logic to configure the
+ *   SX126x LoRa driver.  This function will register the driver as /dev/sx126x0.
+ *
+ * Input Parameters:
+ *   None
+ *
+ * Returned Value:
+ *   Zero is returned on success.  Otherwise, a negated errno value is
+ *   returned to indicate the nature of the failure.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_LPWAN_SX126X
+int stm32_sx126x_initialize(void);
 #endif
 
 /****************************************************************************

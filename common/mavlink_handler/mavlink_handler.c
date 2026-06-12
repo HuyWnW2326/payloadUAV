@@ -4,6 +4,7 @@
  * MAVLink receiver and dispatcher.
  *
  ****************************************************************************/
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -25,15 +26,15 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define READ_BUF_SIZE   128
+#define MAVLINK_HANDLER_READ_BUF_SIZE   128
 
 /* Index pollfd */
-#define FD_IDX_UART     0
-#define FD_IDX_USB      1
-#define MAX_FDS         2
+#define MAVLINK_HANDLER_FD_IDX_UART     0
+#define MAVLINK_HANDLER_FD_IDX_USB      1
+#define MAVLINK_HANDLER_MAX_FDS         2
 
-#define QGC_USB_SYS_ID   1
-#define QGC_USB_COMP_ID  MAV_COMP_ID_AUTOPILOT1
+#define MAVLINK_HANDLER_QGC_USB_SYS_ID   1
+#define MAVLINK_HANDLER_QGC_USB_COMP_ID  MAV_COMP_ID_AUTOPILOT1
 
 /****************************************************************************
  * Private Functions
@@ -112,10 +113,11 @@ static int usb_try_open(void)
     {
       printf("[MAVLink] USB connected -> /dev/ttyACM0\n");
     }
-  else 
+  else
     {
       printf("[MAVLink] USB not connected\n");
     }
+
   return fd;
 }
 
@@ -141,8 +143,10 @@ static void mavlink_send(int fd, const uint8_t *buf, uint16_t len)
             {
               continue;
             }
+
           break;
         }
+
       sent += (uint16_t)n;
     }
 }
@@ -155,6 +159,7 @@ static void mavlink_broadcast(struct mavlink_receiver_s *recv,
     {
       mavlink_send(recv->uart_fd, buf_uart, len_uart);
     }
+
   if (recv->usb_fd >= 0)
     {
       mavlink_send(recv->usb_fd, buf_usb, len_usb);
@@ -163,12 +168,14 @@ static void mavlink_broadcast(struct mavlink_receiver_s *recv,
 
 static uint8_t link_sys_id(struct mavlink_receiver_s *recv, int reply_fd)
 {
-  return reply_fd == recv->usb_fd ? QGC_USB_SYS_ID : recv->sys_id;
+  return reply_fd == recv->usb_fd ? MAVLINK_HANDLER_QGC_USB_SYS_ID :
+                                    recv->sys_id;
 }
 
 static uint8_t link_comp_id(struct mavlink_receiver_s *recv, int reply_fd)
 {
-  return reply_fd == recv->usb_fd ? QGC_USB_COMP_ID : recv->comp_id;
+  return reply_fd == recv->usb_fd ? MAVLINK_HANDLER_QGC_USB_COMP_ID :
+                                    recv->comp_id;
 }
 
 static void send_heartbeat(struct mavlink_receiver_s *recv)
@@ -185,9 +192,10 @@ static void send_heartbeat(struct mavlink_receiver_s *recv)
                              MAV_TYPE_ONBOARD_CONTROLLER,
                              MAV_AUTOPILOT_INVALID, 0, 0, MAV_STATE_ACTIVE);
 
-  mavlink_msg_heartbeat_pack(QGC_USB_SYS_ID, QGC_USB_COMP_ID, &msg_usb,
-                             MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_GENERIC, 0, 0,
-                             MAV_STATE_ACTIVE);
+  mavlink_msg_heartbeat_pack(MAVLINK_HANDLER_QGC_USB_SYS_ID,
+                             MAVLINK_HANDLER_QGC_USB_COMP_ID, &msg_usb,
+                             MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_GENERIC, 0,
+                             0, MAV_STATE_ACTIVE);
 
   len_uart  = mavlink_msg_to_send_buffer(buf_uart, &msg_uart);
   len_usb   = mavlink_msg_to_send_buffer(buf_usb, &msg_usb);
@@ -270,7 +278,8 @@ static void handle_param_request_list(struct mavlink_receiver_s *recv,
       return;
     }
 
-  printf("[PARAM] Request list -> sending %u params\n", (unsigned)NUM_PARAMS);
+  printf("[PARAM] Request list -> sending %u params\n",
+         (unsigned)NUM_PARAMS);
 
   for (uint16_t i = 0; i < (uint16_t)NUM_PARAMS; i++)
     {
@@ -292,10 +301,11 @@ static void handle_param_request_read(struct mavlink_receiver_s *recv,
       return;
     }
 
-  /*
-   * MAVLink standard: param_index == -1 means lookup by name.
+  /* MAVLink standard: param_index == -1 means lookup by name.
+   *
    * Compare with -1 instead of >= 0 to avoid confusing index 0.
    */
+
   if (req.param_index != -1)
     {
       send_param(recv, reply_fd, (uint16_t)req.param_index);
@@ -303,6 +313,7 @@ static void handle_param_request_read(struct mavlink_receiver_s *recv,
     }
 
   /* Lookup by name */
+
   for (uint16_t i = 0; i < (uint16_t)NUM_PARAMS; i++)
     {
       if (strncmp(g_params[i].name, req.param_id, 16) == 0)
@@ -369,17 +380,18 @@ static void handle_param_value(struct mavlink_receiver_s *recv, int reply_fd,
   g_params[idx].value = value.param_value;
 }
 
-static void handle_command_long(struct mavlink_receiver_s *recv, int reply_fd,
-                                mavlink_message_t *msg)
+static void handle_command_long(struct mavlink_receiver_s *recv,
+                                int reply_fd, mavlink_message_t *msg)
 {
   mavlink_command_long_t cmd;
 
   mavlink_msg_command_long_decode(msg, &cmd);
 
-  printf(
-    "[MAVLink] CMD %u  p1=%.1f p2=%.1f p3=%.1f p4=%.1f p5=%.1f p6=%.1f " "p7=%.1f\n", cmd.command,
-    (double)cmd.param1, (double)cmd.param2, (double)cmd.param3, (double)cmd.param4,
-    (double)cmd.param5, (double)cmd.param6, (double)cmd.param7);
+  printf("[MAVLink] CMD %u  p1=%.1f p2=%.1f p3=%.1f p4=%.1f "
+         "p5=%.1f p6=%.1f p7=%.1f\n",
+         cmd.command, (double)cmd.param1, (double)cmd.param2,
+         (double)cmd.param3, (double)cmd.param4, (double)cmd.param5,
+         (double)cmd.param6, (double)cmd.param7);
 
   uint8_t result;
 
@@ -449,8 +461,9 @@ static void request_param(struct mavlink_receiver_s *recv,
   uint8_t           buffer[MAVLINK_MAX_PACKET_LEN];
   uint16_t          len;
 
-  mavlink_msg_param_request_read_pack(recv->sys_id, recv->comp_id, &msg, 1,
-                                      MAV_COMP_ID_AUTOPILOT1, param_name, -1);
+  mavlink_msg_param_request_read_pack(recv->sys_id, recv->comp_id, &msg,
+                                      1, MAV_COMP_ID_AUTOPILOT1,
+                                      param_name, -1);
 
   len = mavlink_msg_to_send_buffer(buffer, &msg);
   mavlink_send(recv->uart_fd, buffer, len);
@@ -493,14 +506,14 @@ static void dispatch_message(struct mavlink_receiver_s *recv, int reply_fd,
       break;
 
     case MAVLINK_MSG_ID_LOCAL_POSITION_NED:
-    if (recv->ops && recv->ops->handle_local_position)
+      if (recv->ops && recv->ops->handle_local_position)
         recv->ops->handle_local_position(recv, reply_fd, msg);
-    break;
+      break;
 
     case MAVLINK_MSG_ID_HEARTBEAT:
-    if (recv->ops && recv->ops->handle_heartbeat)
+      if (recv->ops && recv->ops->handle_heartbeat)
         recv->ops->handle_heartbeat(recv, reply_fd, msg);
-    break;
+      break;
 
     default:
       break;
@@ -523,7 +536,7 @@ static void process_fd(int fd, uint8_t channel, mavlink_message_t *msg,
                        mavlink_status_t *status,
                        struct mavlink_receiver_s *recv, int reply_fd)
 {
-  uint8_t   buf[READ_BUF_SIZE];
+  uint8_t   buf[MAVLINK_HANDLER_READ_BUF_SIZE];
   ssize_t   nread;
 
   while ((nread = read(fd, buf, sizeof(buf))) > 0)
@@ -566,6 +579,7 @@ int mavlink_receiver_run(struct mavlink_receiver_s *recv)
       uint64_t now = get_time_ms();
 
       /* --- Retry open USB --- */
+
       if (recv->usb_fd < 0 && (now - last_usb_retry >= 2000))
         {
           recv->usb_fd      = usb_try_open();
@@ -573,22 +587,25 @@ int mavlink_receiver_run(struct mavlink_receiver_s *recv)
         }
 
       /* --- Build pollfd array --- */
-      struct pollfd fds[MAX_FDS];
+
+      struct pollfd fds[MAVLINK_HANDLER_MAX_FDS];
       int           nfds = 0;
 
-      fds[FD_IDX_UART].fd       = recv->uart_fd;
-      fds[FD_IDX_UART].events   = POLLIN;
+      fds[MAVLINK_HANDLER_FD_IDX_UART].fd       = recv->uart_fd;
+      fds[MAVLINK_HANDLER_FD_IDX_UART].events   = POLLIN;
       nfds++;
 
       bool usb_active = (recv->usb_fd >= 0);
+
       if (usb_active)
         {
-          fds[FD_IDX_USB].fd        = recv->usb_fd;
-          fds[FD_IDX_USB].events    = POLLIN;
+          fds[MAVLINK_HANDLER_FD_IDX_USB].fd        = recv->usb_fd;
+          fds[MAVLINK_HANDLER_FD_IDX_USB].events    = POLLIN;
           nfds++;
         }
 
       /* --- Heartbeat 1Hz --- */
+
       if (now - last_hb_ms >= 1000)
         {
           send_heartbeat(recv);
@@ -596,27 +613,31 @@ int mavlink_receiver_run(struct mavlink_receiver_s *recv)
         }
 
       int ret = poll(fds, (nfds_t)nfds, 50); /* 50ms timeout */
+
       if (ret <= 0)
         {
           continue;
         }
 
       /* --- UART (MAVLINK_COMM_0) --- */
-      if (fds[FD_IDX_UART].revents & POLLIN)
+
+      if (fds[MAVLINK_HANDLER_FD_IDX_UART].revents & POLLIN)
         {
           process_fd(recv->uart_fd, MAVLINK_COMM_0, &msg_uart, &status_uart,
                      recv, recv->uart_fd);
         }
 
       /* --- USB (MAVLINK_COMM_1) --- */
+
       if (usb_active)
         {
-          if (fds[FD_IDX_USB].revents & POLLIN)
+          if (fds[MAVLINK_HANDLER_FD_IDX_USB].revents & POLLIN)
             {
               process_fd(recv->usb_fd, MAVLINK_COMM_1, &msg_usb, &status_usb,
                          recv, recv->usb_fd);
             }
-          else if (fds[FD_IDX_USB].revents & (POLLERR | POLLHUP))
+          else if (fds[MAVLINK_HANDLER_FD_IDX_USB].revents &
+                   (POLLERR | POLLHUP))
             {
               printf("[MAVLink] USB disconnected\n");
               close(recv->usb_fd);
@@ -654,6 +675,7 @@ int mavlink_receiver_init(struct mavlink_receiver_s *recv,
     {
       return recv->uart_fd;
     }
+
   printf("[MAVLink] UART OK  dev=%s baud=%d\n", uart_dev, baud);
 
   recv->usb_fd = usb_try_open();

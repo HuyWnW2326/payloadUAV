@@ -214,8 +214,7 @@ static int init_pwm(void)
 
   /* TIM2 */
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 1, PARAM_GET_U32(
-                             PARAM_SERVO1_MIN));
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 1, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO1_MIN), 0);
   if (ret < 0)
     {
       goto err;
@@ -223,8 +222,7 @@ static int init_pwm(void)
   printf("✓ Servo 1 (TIM2-CH1)");
 
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 2, PARAM_GET_U32(
-                             PARAM_SERVO2_MIN));
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm0", 2, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO2_MIN), 0);
   if (ret < 0)
     {
       goto err;
@@ -233,8 +231,7 @@ static int init_pwm(void)
 
   /* TIM3 */
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 1, PARAM_GET_U32(
-                             PARAM_SERVO3_MIN));
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 1, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO3_MIN), 0);
   if (ret < 0)
     {
       goto err;
@@ -242,8 +239,7 @@ static int init_pwm(void)
   printf("✓ Servo 3 (TIM3-CH1)");
 
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 2, PARAM_GET_U32(
-                             PARAM_SERVO4_MIN));
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 2, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO4_MIN), 0);
   if (ret < 0)
     {
       goto err;
@@ -251,8 +247,7 @@ static int init_pwm(void)
   printf("✓ Servo 4 (TIM3-CH2)\n");
 
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 3, PARAM_GET_U32(
-                             PARAM_SERVO5_MIN));
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 3, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO5_MIN), 0);
   if (ret < 0)
     {
       goto err;
@@ -260,8 +255,7 @@ static int init_pwm(void)
   printf("✓ Servo 5 (TIM3-CH3) \n");
 
   ret =
-    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 4, PARAM_GET_U32(
-                             PARAM_SERVO6_MIN));
+    pwm_driver_add_channel(&g_pwm, "/dev/pwm1", 4, PWM_MODE_SERVO, PARAM_GET_U32(PARAM_SERVO6_MIN), 0);
   if (ret < 0)
     {
       goto err;

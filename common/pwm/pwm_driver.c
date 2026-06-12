@@ -1,9 +1,10 @@
 /****************************************************************************
- * src/pwm_driver.c
+ * common/pwm/pwm_driver.c
  *
  * PWM Driver Implementation
  *
  ****************************************************************************/
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
@@ -35,10 +36,14 @@
  * @return         Clamped pulse width
  */
 
-static inline uint32_t pwm_clamp_pulse(uint32_t pulse_us, uint8_t channel_idx)
+static inline uint32_t pwm_clamp_pulse(uint32_t pulse_us,
+                                       uint8_t channel_idx)
 {
-  uint32_t  min_pulse   = PARAM_GET_U32(PARAM_SERVO1_MIN + channel_idx * 2);
-  uint32_t  max_pulse   = PARAM_GET_U32(PARAM_SERVO1_MIN + channel_idx * 2 + 1);
+  uint32_t min_pulse;
+  uint32_t max_pulse;
+
+  min_pulse = PARAM_GET_U32(PARAM_SERVO1_MIN + channel_idx * 2);
+  max_pulse = PARAM_GET_U32(PARAM_SERVO1_MIN + channel_idx * 2 + 1);
 
   if (pulse_us < min_pulse)
     {
@@ -52,6 +57,7 @@ static inline uint32_t pwm_clamp_pulse(uint32_t pulse_us, uint8_t channel_idx)
               (unsigned long)pulse_us, (unsigned long)max_pulse);
       return max_pulse;
     }
+
   return pulse_us;
 }
 
@@ -60,7 +66,7 @@ static inline uint32_t pwm_clamp_pulse(uint32_t pulse_us, uint8_t channel_idx)
  *
  * NuttX PWM uses ub16 format:
  *   - 0x0000 = 0% duty cycle
- *   - 0xFFFF = 100% duty cycle
+ *   - 0xffff = 100% duty cycle
  *   - 0x8000 = 50% duty cycle
  *
  * Formula: duty = (pulse_us / period_us) * 65536
@@ -68,6 +74,8 @@ static inline uint32_t pwm_clamp_pulse(uint32_t pulse_us, uint8_t channel_idx)
 
 static ub16_t pulse_to_duty_ub16(uint32_t pulse_us, uint32_t period_us)
 {
+  uint64_t duty;
+
   if (period_us == 0)
     {
       pwmerr("ERROR: period_us is zero\n");
@@ -76,14 +84,14 @@ static ub16_t pulse_to_duty_ub16(uint32_t pulse_us, uint32_t period_us)
 
   /* Calculate duty cycle: (pulse / period) * 65536 */
 
-  uint64_t duty = ((uint64_t)pulse_us << 16) / period_us;
+  duty = ((uint64_t)pulse_us << 16) / period_us;
 
   /* Clamp to valid range */
 
-  if (duty > 0xFFFF)
+  if (duty > 0xffff)
     {
       pwmwarn("WARNING: Duty cycle %llu exceeds max, clamping\n", duty);
-      duty = 0xFFFF;
+      duty = 0xffff;
     }
 
   return (ub16_t)duty;
@@ -102,6 +110,8 @@ static int pwm_apply_channel(struct pwm_channel_s *channel,
                              uint32_t frequency_hz, uint8_t channel_idx)
 {
   struct pwm_info_s pwm_info;
+  uint32_t          period_us;
+  uint32_t          pulse_us;
   int               ret;
 
   if (!channel || !channel->is_open || channel->fd < 0)
@@ -119,18 +129,31 @@ static int pwm_apply_channel(struct pwm_channel_s *channel,
 
   /* Calculate period in microseconds */
 
-  uint32_t period_us = 1000000UL / frequency_hz;
+  period_us = 1000000UL / frequency_hz;
 
   /* Clamp pulse width to valid range */
 
-  uint32_t pulse_us = pwm_clamp_pulse(channel->pulse_us, channel_idx);
+  pulse_us = pwm_clamp_pulse(channel->pulse_us, channel_idx);
 
   /* Setup PWM info structure */
 
   memset(&pwm_info, 0, sizeof(struct pwm_info_s));
   pwm_info.frequency            = frequency_hz;
   pwm_info.channels[0].channel  = channel->channel_num;
-  pwm_info.channels[0].duty     = pulse_to_duty_ub16(pulse_us, period_us);
+
+  if (channel->mode == PWM_MODE_SERVO)
+    {
+      /* Clamp rồi convert pulse → ub16 */
+      uint32_t pulse_us = pwm_clamp_pulse(channel->pulse_us, channel_idx);
+      pwm_info.channels[0].duty = pulse_to_duty_ub16(pulse_us, period_us);
+    }
+  else /* PWM_MODE_DUTY */
+    {
+      /* duty_percent 0-100 → ub16 0x0000-0xffff */
+      uint8_t duty = channel->duty_percent > 100 ? 100 : channel->duty_percent;
+      pwm_info.channels[0].duty = (ub16_t)((uint32_t)duty * 0xffff / 100);
+      printf("[PWM] duty = %d", duty);
+    }
 
   /* Set characteristics */
 
@@ -157,9 +180,7 @@ static int pwm_apply_channel(struct pwm_channel_s *channel,
   return OK;
 }
 
-/*
- *  Initialize PWM Driver
- */
+/* Initialize PWM Driver */
 
 int pwm_driver_init(struct pwm_driver_s *driver, uint32_t frequency_hz)
 {
@@ -174,19 +195,13 @@ int pwm_driver_init(struct pwm_driver_s *driver, uint32_t frequency_hz)
       return OK;
     }
 
-  if (frequency_hz < 50 || frequency_hz > 400)
-    {
-      pwmerr("ERROR: Invalid frequency: %lu Hz (valid: 50-400)\n",
-             (unsigned long)frequency_hz);
-      return -EINVAL;
-    }
-
   memset(driver, 0, sizeof(struct pwm_driver_s));
   driver->frequency_hz      = frequency_hz;
   driver->is_initialized    = true;
   driver->num_channels      = 0;
 
   /* Initialize all channel file descriptors to invalid */
+
   for (int i = 0; i < PARAM_GET_U32(PARAM_SERVO_NUM); i++)
     {
       driver->channels[i].fd = -1;
@@ -198,15 +213,15 @@ int pwm_driver_init(struct pwm_driver_s *driver, uint32_t frequency_hz)
   return OK;
 }
 
-/*
- *  Add PWM channel to driver
- */
+/* Add PWM channel to driver */
 
 int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
-                           uint8_t channel_num, uint32_t initial_pulse_us)
+                           uint8_t channel_num, pwm_mode_t mode, 
+                           uint32_t initial_pulse_us, uint32_t initial_duty)
 {
   int   idx;
   int   ret;
+  int   fd;
 
   /* Validate driver */
 
@@ -232,7 +247,7 @@ int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
 
   /* Open PWM device */
 
-  int fd = open(devpath, O_WRONLY);
+  fd = open(devpath, O_WRONLY);
 
   if (fd < 0)
     {
@@ -243,10 +258,12 @@ int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
 
   idx = driver->num_channels;
 
-  driver->channels[idx].fd          = fd;
-  driver->channels[idx].channel_num = channel_num;
-  driver->channels[idx].pulse_us    = initial_pulse_us;
-  driver->channels[idx].is_open     = true;
+  driver->channels[idx].fd            = fd;
+  driver->channels[idx].channel_num   = channel_num;
+  driver->channels[idx].pulse_us      = initial_pulse_us;
+  driver->channels[idx].duty_percent  = initial_duty;
+  driver->channels[idx].mode          = mode;
+  driver->channels[idx].is_open       = true;
 
   /* Apply initial settings to hardware */
 
@@ -262,8 +279,8 @@ int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
 
   driver->num_channels++;
 
-  pwminfo("Added channel %d: %s (ch%d) @ %lu µs\n", idx, devpath, channel_num,
-          (unsigned long)driver->channels[idx].pulse_us);
+  pwminfo("Added channel %d: %s (ch%d) @ %lu µs\n", idx, devpath,
+          channel_num, (unsigned long)driver->channels[idx].pulse_us);
 
   return OK;
 }
@@ -276,12 +293,13 @@ int pwm_driver_add_channel(struct pwm_driver_s *driver, const char *devpath,
  * Public Functions
  ****************************************************************************/
 
-int pwm_driver_set_pulse(struct pwm_driver_s *driver, uint8_t channel_idx,
-                         uint32_t pulse_us)
+int pwm_driver_set_pulse(struct pwm_driver_s *driver, 
+                         uint8_t channel_idx, uint32_t pulse_us)
 {
   struct pwm_channel_s *channel;
 
   /* Validate driver */
+
   if (driver == NULL || !driver->is_initialized)
     {
       pwmerr("ERROR: Controller not initialized\n");
@@ -289,6 +307,7 @@ int pwm_driver_set_pulse(struct pwm_driver_s *driver, uint8_t channel_idx,
     }
 
   /* Validate channel index */
+
   if (channel_idx >= driver->num_channels)
     {
       pwmerr("ERROR: Invalid channel index: %u\n", channel_idx);
@@ -308,6 +327,35 @@ int pwm_driver_set_pulse(struct pwm_driver_s *driver, uint8_t channel_idx,
   return pwm_apply_channel(channel, driver->frequency_hz, channel_idx);
 }
 
+int pwm_driver_set_duty(struct pwm_driver_s *driver,
+                        uint8_t channel_idx, uint8_t duty_percent)
+{
+  struct pwm_channel_s *channel;
+
+  if (driver == NULL || !driver->is_initialized)
+    {
+      pwmerr("ERROR: Driver not initialized\n");
+      return -EINVAL;
+    }
+
+  if (channel_idx >= driver->num_channels)
+    {
+      pwmerr("ERROR: Invalid channel index: %u\n", channel_idx);
+      return -EINVAL;
+    }
+
+  channel = &driver->channels[channel_idx];
+
+  if (channel->mode != PWM_MODE_DUTY)
+    {
+      pwmerr("ERROR: Channel %u is not in DUTY mode\n", channel_idx);
+      return -EINVAL;
+    }
+
+  channel->duty_percent = duty_percent;
+  return pwm_apply_channel(channel, driver->frequency_hz, channel_idx);
+}
+
 /**
  * Set pulse widths for all channels
  */
@@ -319,6 +367,7 @@ int pwm_driver_set_all_pulses(struct pwm_driver_s *driver,
   int ret = OK;
 
   /* Validate driver */
+
   if (driver == NULL || !driver->is_initialized)
     {
       pwmerr("ERROR: Driver not initialized\n");
@@ -339,6 +388,7 @@ int pwm_driver_set_all_pulses(struct pwm_driver_s *driver,
     }
 
   /* Set pulse widths for each channel */
+
   for (int i = 0; i < num_pulses; i++)
     {
       ret = pwm_driver_set_pulse(driver, i, pulse_us_array[i]);

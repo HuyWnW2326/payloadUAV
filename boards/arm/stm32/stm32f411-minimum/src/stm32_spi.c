@@ -131,6 +131,12 @@ uint8_t stm32_spi1status(struct spi_dev_s *dev, uint32_t devid)
 void stm32_spi2select(struct spi_dev_s *dev, uint32_t devid,
                       bool selected)
 {
+  #ifdef CONFIG_LPWAN_SX126X
+  if (devid == SPIDEV_LPWAN(0))
+    {
+      stm32_gpiowrite(GPIO_SX126X_CS, !selected);
+    }
+  #endif
 }
 
 uint8_t stm32_spi2status(struct spi_dev_s *dev, uint32_t devid)

@@ -71,7 +71,7 @@ struct param_entry_s    g_params[] = {
   { "SERVO5_MIN", 1000.0f          }, { "SERVO5_MAX",  2000.0f            },
   { "SERVO6_MIN", 1000.0f          }, { "SERVO6_MAX",  2000.0f            },
   { "SERVO_NUM",  6.0f             }, { "PWM_FREQ",    50.0f              },
-  { "MAV_SYS_ID", 1.0f             }, { "MAV_COMP_ID", 236.0f           },
+  { "MAV_SYS_ID", 1.0f             }, { "MAV_COMP_ID", 236.0f             },
 };
 
 const int NUM_PARAMS = (int)(sizeof(g_params) / sizeof(g_params[0]));

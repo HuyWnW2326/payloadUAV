@@ -10,7 +10,6 @@ add_subdirectory(${REPO_ROOT}/common common_build)
 add_subdirectory(${REPO_ROOT}/payloads/${TARGET} payload_build)
 CMAKE
 
-# Chỉ configure nếu chưa có build dir
 if [ ! -f build/$TARGET/build.ninja ]; then
     echo ">>> Configuring..."
     cmake -S nuttx \

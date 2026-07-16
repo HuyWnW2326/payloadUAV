@@ -661,7 +661,7 @@ int mavlink_receiver_run(struct mavlink_receiver_s *recv)
 
 int mavlink_receiver_init(struct mavlink_receiver_s *recv,
                           const char *uart_dev, int baud,
-                          struct pwm_driver_s *pwm, mavlink_ops_t *ops)
+                          struct pwm_driver_s *pwm, const mavlink_ops_t *ops)
 {
   memset(recv, 0, sizeof(*recv));
   recv->sys_id  = (uint8_t)PARAM_GET_U32(PARAM_MAV_SYS_ID);

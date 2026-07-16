@@ -1,7 +1,7 @@
 /****************************************************************************
  * common/sbus/sbus_driver.c
  *
- * SBUS Driver Implementation
+ * Minimal SBUS Driver Implementation
  *
  ****************************************************************************/
 
@@ -12,7 +12,6 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
@@ -20,7 +19,6 @@
 #include <debug.h>
 #include <string.h>
 #include <poll.h>
-#include <time.h>
 
 #include "sbus_driver.h"
 
@@ -69,153 +67,54 @@ static int sbus_config_uart(int fd)
   return OK;
 }
 
-static uint64_t sbus_time_us(void)
+static int sbus_read_byte(struct sbus_driver_s *driver, uint8_t *byte)
 {
-  struct timespec ts;
-
-  if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
-    {
-      return 0;
-    }
-
-  return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
-}
-
-static bool sbus_end_byte_valid(uint8_t byte)
-{
-  switch (byte)
-    {
-      case 0x00: /* SBUS1 */
-      case 0x04: /* SBUS2 receiver voltage slot */
-      case 0x14: /* SBUS2 GPS/baro slot */
-      case 0x24: /* SBUS2 data slot */
-      case 0x34: /* SBUS2 data slot */
-        return true;
-
-      default:
-        return false;
-    }
-}
-
-static int sbus_lock(struct sbus_driver_s *driver)
-{
+  struct pollfd pfd;
+  ssize_t nread;
   int ret;
 
-  do
-    {
-      ret = sem_wait(&driver->lock);
-    }
-  while (ret < 0 && errno == EINTR);
+  pfd.fd      = driver->fd;
+  pfd.events  = POLLIN;
+  pfd.revents = 0;
 
+  ret = poll(&pfd, 1, SBUS_POLL_TIMEOUT_MS);
   if (ret < 0)
     {
       int errcode = errno;
-      _err("ERROR: SBUS sem_wait failed: %d\n", errcode);
+      _err("ERROR: SBUS poll failed: %d\n", errcode);
       return -errcode;
     }
 
-  return OK;
-}
-
-static void sbus_unlock(struct sbus_driver_s *driver)
-{
-  sem_post(&driver->lock);
-}
-
-static void sbus_parser_reset(struct sbus_driver_s *driver)
-{
-  driver->frame_len = 0;
-}
-
-static void sbus_recover_from_decode_fail(struct sbus_driver_s *driver)
-{
-  uint8_t start_index;
-
-  driver->frame_drops++;
-
-  for (start_index = 1; start_index < driver->frame_len; start_index++)
+  if (ret == 0)
     {
-      if (driver->frame_buf[start_index] == SBUS_START_BYTE)
-        {
-          memmove(driver->frame_buf, &driver->frame_buf[start_index],
-                  driver->frame_len - start_index);
-          driver->frame_len -= start_index;
-          return;
-        }
+      return -EAGAIN;
     }
 
-  sbus_parser_reset(driver);
-}
-
-static int sbus_parse_byte(struct sbus_driver_s *driver, uint8_t byte,
-                           struct sbus_frame_s *frame)
-{
-  uint64_t now_us;
-
-  now_us = sbus_time_us();
-  if (driver->last_rx_time_us != 0 &&
-      now_us > driver->last_rx_time_us &&
-      now_us - driver->last_rx_time_us > SBUS_FRAME_GAP_US)
+  if (pfd.revents & (POLLERR | POLLHUP))
     {
-      sbus_parser_reset(driver);
+      _err("ERROR: SBUS UART poll error: 0x%02lx\n",
+           (unsigned long)pfd.revents);
+      return -EIO;
     }
 
-  driver->last_rx_time_us = now_us;
-
-  if (driver->frame_len == 0)
+  nread = read(driver->fd, byte, 1);
+  if (nread < 0)
     {
-      if (byte != SBUS_START_BYTE)
+      int errcode = errno;
+
+      if (errcode == EAGAIN || errcode == EWOULDBLOCK)
         {
           return -EAGAIN;
         }
 
-      driver->frame_buf[driver->frame_len++] = byte;
-      return -EAGAIN;
+      _err("ERROR: Failed to read SBUS byte: %d\n", errcode);
+      return -errcode;
     }
 
-  if (driver->frame_len >= SBUS_BUFFER_SIZE)
+  if (nread != 1)
     {
-      sbus_recover_from_decode_fail(driver);
-      return -EAGAIN;
+      return -EIO;
     }
-
-  driver->frame_buf[driver->frame_len++] = byte;
-
-  if (driver->frame_len < SBUS_FRAME_SIZE)
-    {
-      return -EAGAIN;
-    }
-
-  memcpy(frame->data, driver->frame_buf, SBUS_FRAME_SIZE);
-
-  if (frame->data[0] != SBUS_START_BYTE ||
-      !sbus_end_byte_valid(frame->data[SBUS_FRAME_SIZE - 1]))
-    {
-      sbus_recover_from_decode_fail(driver);
-      return -EAGAIN;
-    }
-
-  sbus_parser_reset(driver);
-
-  return OK;
-}
-
-static int sbus_update_latest(struct sbus_driver_s *driver,
-                              const struct sbus_channels_s *channels)
-{
-  int ret;
-
-  ret = sbus_lock(driver);
-  if (ret < 0)
-    {
-      return ret;
-    }
-
-  memcpy(&driver->latest_channels, channels,
-         sizeof(struct sbus_channels_s));
-  driver->has_channels = true;
-
-  sbus_unlock(driver);
 
   return OK;
 }
@@ -249,20 +148,11 @@ int sbus_driver_init(struct sbus_driver_s *driver, const char *devpath)
   memset(driver, 0, sizeof(struct sbus_driver_s));
   driver->fd = -1;
 
-  ret = sem_init(&driver->lock, 0, 1);
-  if (ret < 0)
-    {
-      int errcode = errno;
-      _err("ERROR: SBUS sem_init failed: %d\n", errcode);
-      return -errcode;
-    }
-
   fd = open(devpath, O_RDWR | O_NOCTTY | O_NONBLOCK);
   if (fd < 0)
     {
       int errcode = errno;
       _err("ERROR: Failed to open %s: %d\n", devpath, errcode);
-      sem_destroy(&driver->lock);
       return -errcode;
     }
 
@@ -270,78 +160,13 @@ int sbus_driver_init(struct sbus_driver_s *driver, const char *devpath)
   if (ret < 0)
     {
       close(fd);
-      sem_destroy(&driver->lock);
       return ret;
     }
 
   driver->fd             = fd;
   driver->is_initialized = true;
-  driver->last_rx_time_us = sbus_time_us();
 
   _info("SBUS driver initialized: %s\n", devpath);
-
-  return OK;
-}
-
-int sbus_driver_read_byte(struct sbus_driver_s *driver, uint8_t *byte)
-{
-  struct pollfd pfd;
-  ssize_t nread;
-  int ret;
-
-  if (driver == NULL || !driver->is_initialized || driver->fd < 0)
-    {
-      _err("ERROR: SBUS driver not initialized\n");
-      return -EINVAL;
-    }
-
-  if (byte == NULL)
-    {
-      _err("ERROR: SBUS byte pointer is NULL\n");
-      return -EINVAL;
-    }
-
-  pfd.fd      = driver->fd;
-  pfd.events  = POLLIN;
-  pfd.revents = 0;
-
-  ret = poll(&pfd, 1, SBUS_POLL_TIMEOUT_MS);
-  if (ret < 0)
-    {
-      int errcode = errno;
-      _err("ERROR: SBUS poll failed: %d\n", errcode);
-      return -errcode;
-    }
-
-  if (ret == 0)
-    {
-      return -EAGAIN;
-    }
-
-  if (pfd.revents & (POLLERR | POLLHUP))
-    {
-      _err("ERROR: SBUS UART poll error: 0x%02lx\n",
-           (unsigned long)pfd.revents);
-      return -EIO;
-    }
-
-  nread = read(driver->fd, byte, 1);
-  if (nread < 0)
-    {
-      int errcode = errno;
-      if (errcode == EAGAIN || errcode == EWOULDBLOCK)
-        {
-          return -EAGAIN;
-        }
-
-      _err("ERROR: Failed to read SBUS byte: %d\n", errcode);
-      return -errcode;
-    }
-
-  if (nread != 1)
-    {
-      return -EIO;
-    }
 
   return OK;
 }
@@ -350,6 +175,7 @@ int sbus_driver_read_frame(struct sbus_driver_s *driver,
                            struct sbus_frame_s *frame)
 {
   uint8_t byte;
+  int idx;
   int ret;
 
   if (driver == NULL || !driver->is_initialized || driver->fd < 0)
@@ -364,29 +190,32 @@ int sbus_driver_read_frame(struct sbus_driver_s *driver,
       return -EINVAL;
     }
 
-  for (; ; )
+  do
     {
-      ret = sbus_driver_read_byte(driver, &byte);
+      ret = sbus_read_byte(driver, &byte);
       if (ret < 0)
         {
           return ret;
         }
+    }
+  while (byte != SBUS_START_BYTE);
 
-      ret = sbus_parse_byte(driver, byte, frame);
-      if (ret == OK)
-        {
-          return OK;
-        }
+  frame->data[0] = byte;
 
-      if (ret != -EAGAIN)
+  for (idx = 1; idx < SBUS_FRAME_SIZE; idx++)
+    {
+      ret = sbus_read_byte(driver, &frame->data[idx]);
+      if (ret < 0)
         {
           return ret;
         }
     }
+
+  return OK;
 }
 
-int sbus_driver_parse_frame(const struct sbus_frame_s *frame,
-                            struct sbus_channels_s *channels)
+int sbus_driver_decode_frame(const struct sbus_frame_s *frame,
+                             struct sbus_channels_s *channels)
 {
   uint8_t flags;
 
@@ -405,13 +234,6 @@ int sbus_driver_parse_frame(const struct sbus_frame_s *frame,
   if (frame->data[0] != SBUS_START_BYTE)
     {
       _err("ERROR: Invalid SBUS start byte: 0x%02x\n", frame->data[0]);
-      return -EINVAL;
-    }
-
-  if (!sbus_end_byte_valid(frame->data[SBUS_FRAME_SIZE - 1]))
-    {
-      _err("ERROR: Invalid SBUS end byte: 0x%02x\n",
-           frame->data[SBUS_FRAME_SIZE - 1]);
       return -EINVAL;
     }
 
@@ -475,48 +297,12 @@ int sbus_driver_read_channels(struct sbus_driver_s *driver,
       return ret;
     }
 
-  ret = sbus_driver_parse_frame(&frame, channels);
-  if (ret < 0)
-    {
-      if (driver != NULL)
-        {
-          driver->frame_drops++;
-        }
-
-      return ret;
-    }
-
-  return sbus_update_latest(driver, channels);
-}
-
-int sbus_driver_set_callback(struct sbus_driver_s *driver,
-                             sbus_channels_callback_t callback)
-{
-  int ret;
-
-  if (driver == NULL || !driver->is_initialized)
-    {
-      _err("ERROR: SBUS driver not initialized\n");
-      return -EINVAL;
-    }
-
-  ret = sbus_lock(driver);
-  if (ret < 0)
-    {
-      return ret;
-    }
-
-  driver->channels_callback = callback;
-
-  sbus_unlock(driver);
-
-  return OK;
+  return sbus_driver_decode_frame(&frame, channels);
 }
 
 int sbus_driver_run(struct sbus_driver_s *driver)
 {
   struct sbus_channels_s channels;
-  sbus_channels_callback_t callback;
   int ret;
 
   if (driver == NULL || !driver->is_initialized || driver->fd < 0)
@@ -540,19 +326,8 @@ int sbus_driver_run(struct sbus_driver_s *driver)
           return ret;
         }
 
-      ret = sbus_lock(driver);
-      if (ret < 0)
-        {
-          return ret;
-        }
-
-      callback = driver->channels_callback;
-      sbus_unlock(driver);
-
-      if (callback != NULL)
-        {
-          callback(driver, &channels);
-        }
+      driver->latest_channels = channels;
+      driver->has_channels    = true;
     }
 
   return OK;
@@ -566,53 +341,6 @@ void sbus_driver_stop(struct sbus_driver_s *driver)
     }
 
   driver->is_running = false;
-}
-
-int sbus_driver_get_latest(struct sbus_driver_s *driver,
-                           struct sbus_channels_s *channels)
-{
-  int ret;
-
-  if (driver == NULL || !driver->is_initialized)
-    {
-      _err("ERROR: SBUS driver not initialized\n");
-      return -EINVAL;
-    }
-
-  if (channels == NULL)
-    {
-      _err("ERROR: SBUS channels pointer is NULL\n");
-      return -EINVAL;
-    }
-
-  ret = sbus_lock(driver);
-  if (ret < 0)
-    {
-      return ret;
-    }
-
-  if (!driver->has_channels)
-    {
-      sbus_unlock(driver);
-      return -EAGAIN;
-    }
-
-  memcpy(channels, &driver->latest_channels,
-         sizeof(struct sbus_channels_s));
-
-  sbus_unlock(driver);
-
-  return OK;
-}
-
-uint32_t sbus_driver_dropped_frames(struct sbus_driver_s *driver)
-{
-  if (driver == NULL)
-    {
-      return 0;
-    }
-
-  return driver->frame_drops;
 }
 
 void sbus_driver_deinit(struct sbus_driver_s *driver)
@@ -633,8 +361,6 @@ void sbus_driver_deinit(struct sbus_driver_s *driver)
 
   driver->is_initialized = false;
   driver->has_channels   = false;
-  sbus_parser_reset(driver);
-  sem_destroy(&driver->lock);
 
   _info("SBUS driver deinitialized\n");
 }

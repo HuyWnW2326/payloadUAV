@@ -181,7 +181,7 @@ static void handle_heartbeat(struct mavlink_receiver_s *recv,
     }
 }
 
-static mavlink_ops_t agriculture_ops = {
+static const mavlink_ops_t agriculture_ops = {
   .handle_do_set_servo      = NULL,
   .handle_do_set_actuator   = handle_do_set_actuator,
   .handle_heartbeat         = handle_heartbeat,

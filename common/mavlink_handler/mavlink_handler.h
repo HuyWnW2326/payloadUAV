@@ -46,7 +46,7 @@ struct mavlink_receiver_s
   uint8_t comp_id;
   volatile bool is_running;
   struct pwm_driver_s *pwm;
-  mavlink_ops_t *ops;
+  const mavlink_ops_t *ops;
 };
 
 /****************************************************************************
@@ -55,7 +55,7 @@ struct mavlink_receiver_s
 
 int mavlink_receiver_init(struct mavlink_receiver_s *recv,
                           const char *uart_dev, int baud,
-                          struct pwm_driver_s *pwm, mavlink_ops_t *ops);
+                          struct pwm_driver_s *pwm, const mavlink_ops_t *ops);
 
 int mavlink_receiver_run(struct mavlink_receiver_s *recv);
 

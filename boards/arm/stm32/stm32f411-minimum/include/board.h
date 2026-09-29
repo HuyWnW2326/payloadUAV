@@ -228,18 +228,18 @@
  *        PB6   CN5 pin 3, CN10 pin 17
  */
 
-// #if 1
-// #  define GPIO_USART1_RX (GPIO_USART1_RX_1|GPIO_SPEED_100MHz)    /* PA10 */
-// #  define GPIO_USART1_TX (GPIO_USART1_TX_1|GPIO_SPEED_100MHz)    /* PA9  */
-// #else
-// #  define GPIO_USART1_RX (GPIO_USART1_RX_2|GPIO_SPEED_100MHz)    /* PB7 */
-// #  define GPIO_USART1_TX (GPIO_USART1_TX_2|GPIO_SPEED_100MHz)    /* PB6  */
-// #endif
+#if 1
+#  define GPIO_USART1_RX (GPIO_USART1_RX_1|GPIO_SPEED_100MHz)    /* PA10 */
+#  define GPIO_USART1_TX (GPIO_USART1_TX_1|GPIO_SPEED_100MHz)    /* PA9  */
+#else
+#  define GPIO_USART1_RX (GPIO_USART1_RX_2|GPIO_SPEED_100MHz)    /* PB7 */
+#  define GPIO_USART1_TX (GPIO_USART1_TX_2|GPIO_SPEED_100MHz)    /* PB6  */
+#endif
 
 
-#  define GPIO_USART1_RX (GPIO_ALT | GPIO_AF7 | GPIO_PULLUP | GPIO_SPEED_50MHz | GPIO_PUSHPULL | \
-                              GPIO_PORTB | GPIO_PIN3)    /* PB3 */
-#  define GPIO_USART1_TX GPIO_USART1_TX_1    /* PA9  */
+// #  define GPIO_USART1_RX (GPIO_ALT | GPIO_AF7 | GPIO_PULLUP | GPIO_SPEED_50MHz | GPIO_PUSHPULL | \
+//                               GPIO_PORTB | GPIO_PIN3)    /* PB3 */
+// #  define GPIO_USART1_TX GPIO_USART1_TX_1    /* PA9  */
 
 
 /* USART2:

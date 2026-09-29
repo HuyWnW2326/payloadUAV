@@ -69,7 +69,7 @@ static uint8_t handle_do_set_actuator(struct mavlink_receiver_s *recv,
   else
     duty = 0;
 
-  int r = pwm_driver_set_duty(winch->mavlink.pwm, 1, duty);
+  int r = pwm_driver_set_duty(winch->mavlink.pwm, 0, duty);
   printf("[MAVLink] Actuator -> %d%%\n", duty);
 
   if (r < 0)

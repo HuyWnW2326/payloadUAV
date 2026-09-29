@@ -6,4 +6,4 @@ build/
 *.elf
 *.bin
 *.hex
-*.map
+*.map.vscode/
